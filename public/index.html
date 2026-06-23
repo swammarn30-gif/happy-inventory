@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ကျောနီ စာရင်းဇယား စနစ်</title>
+    <style>
+        body { font-family: sans-serif; padding: 10px; background: #f4f6f9; margin: 0; }
+        .container { max-width: 100%; margin: auto; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); box-sizing: border-box; }
+        h2, h3 { color: #333; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #4CAF50; color: white; white-space: nowrap; }
+        input[type="password"], input[type="text"], input[type="number"], select { width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 5px; }
+        input:disabled { background-color: #eee; color: #555; border: 1px solid #ccc; }
+        button { background: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px;}
+        .hidden { display: none; }
+        .action-box { background: #e7f4e4; padding: 12px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #4CAF50; }
+        .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 15px; }
+        .role-badge { color: white; padding: 4px 10px; border-radius: 4px; font-size: 14px; display: inline-block; margin-top: 5px; }
+        .calc-text { font-weight: bold; color: blue; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-section">
+        <h2>ကျောနီ စာရင်းစနစ်သို့ ဝင်ရန်</h2>
+        <input type="password" id="password" placeholder="Password ရိုက်ထည့်ပါ" style="padding:12px; margin-bottom:10px;"><br>
+        <button onclick="login()" style="width:100%; padding:12px; font-size:16px;">လော့ဂ်အင်ဝင်မည်</button>
+    </div>
+
+    <div id="app-section" class="hidden">
+        <h2>ကုန်ထုတ်လုပ်မှုနှင့် ထုပ်ပိုးမှု စာရင်းဇယား</h2>
+        <div id="user-role-badge" class="role-badge"></div>
+        <br><br>
+        
+        <label><b>ရက်စွဲရွေးချယ်ရန်:</b></label>
+        <input type="date" id="record-date" onchange="loadRecords()" style="padding:6px; margin-bottom:15px; font-size:15px;">
+
+        <div id="admin-only-section" class="action-box hidden">
+            <h3>➕ (က) ပစ္စည်းအသစ်တိုးရန်</h3>
+            <input type="text" id="new-item-name" placeholder="ပစ္စည်းအမည် ရိုက်ပါ"><br>
+            <button onclick="addItem('production')" style="background:#008CBA;">Production ထဲထည့်မည်</button>
+            <button onclick="addItem('packaging')" style="background:#008CBA;">Packaging ထဲထည့်မည်</button>
+
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #4CAF50;">
+                <h3>✏️ (ခ) ရှိပြီးသား ပစ္စည်းနာမည် ပြင်ဆင်ရန်</h3>
+                <label>အုပ်စုရွေးရန်:</label>
+                <select id="rename-group" onchange="populateRenameDropdown()">
+                    <option value="production">Production (ကုန်ထုတ်လုပ်မှု)</option>
+                    <option value="packaging">Packaging (ထုပ်ပိုးမှု)</option>
+                </select>
+                <label>ပြင်မည့်ပစ္စည်း ရွေးရန်:</label>
+                <select id="rename-old-name"></select>
+                <label>နာမည်အသစ် ရိုက်ရန်:</label>
+                <input type="text" id="rename-new-name" placeholder="နာမည်အသစ် ရိုက်ထည့်ပါ"><br>
+                <button onclick="renameItem()" style="background:#FF9800; width:100%; font-size:15px;">🔄 နာမည်ပြောင်းလဲမှု သိမ်းဆည်းမည်</button>
+            </div>
+        </div>
+
+        <hr>
+
+        <h3>၁။ Production ပိုင်း (ကုန်ထုတ်လုပ်မှု)</h3>
+        <div class="table-wrapper">
+            <table id="production-table">
+                <thead>
+                    <tr>
+                        <th>ပစ္စည်းအမည်</th>
+                        <th>ယခင်လက်ကျန်</th>
+                        <th>အဝင် (Added)</th>
+                        <th>အထုတ်</th>
+                        <th>ပြန်အပ်</th>
+                        <th>အသုံး (Auto)</th>
+                        <th>အပယ် (Wasted)</th>
+                        <th>လက်ရှိလက်ကျန် (Auto)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <h3>၂။ Packaging ပိုင်း (ထုပ်ပိုးမှု)</h3>
+        <div class="table-wrapper">
+            <table id="packaging-table">
+                <thead>
+                    <tr>
+                        <th>ပစ္စည်းအမည်</th>
+                        <th>ယခင်လက်ကျန်</th>
+                        <th>အဝင် (Added)</th>
+                        <th>မနက်ထုတ် (အထုတ်)</th>
+                        <th>ညနေပြန်အပ် (ပြန်အပ်)</th>
+                        <th>အသုံး (Auto)</th>
+                        <th>ပျက်စီး</th>
+                        <th>လက်ရှိလက်ကျန် (Auto)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <button id="save-btn" onclick="saveRecords()" style="background: #2196F3; font-size: 16px; width: 100%; padding: 12px; margin-bottom: 20px;" class="hidden">💾 စာရင်းသိမ်းဆည်းမည်</button>
+    </div>
+</div>
+
+<script>
+    let selectedDate = '';
+    let userRole = '';
+    let globalProduction = [];
+    let globalPackaging = [];
+    document.getElementById('record-date').valueAsDate = new Date();
+
+    function login() {
+        const password = document.getElementById('password').value;
+        if(!password) return alert('Password ရိုက်ထည့်ပါ');
+
+        fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                userRole = data.role;
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                
+                const badge = document.getElementById('user-role-badge');
+                if(userRole === 'admin') {
+                    badge.innerText = '🔐 အဆင့်အတန်း - ပြင်ဆင်ခွင့်ရှိသူ (Admin)';
+                    badge.style.background = '#4CAF50';
+                    document.getElementById('admin-only-section').classList.remove('hidden');
+                    document.getElementById('save-btn').classList.remove('hidden');
+                } else {
+                    badge.innerText = '👁️ အဆင့်အတန်း - ကြည့်ရှုခွင့်ရုံ (Viewer)';
+                    badge.style.background = '#FF9800';
+                    document.getElementById('admin-only-section').classList.add('hidden');
+                    document.getElementById('save-btn').classList.add('hidden');
+                }
+                loadRecords();
+            } else {
+                alert(data.message);
+            }
+        });
+    }
+
+    function loadRecords() {
+        selectedDate = document.getElementById('record-date').value;
+        if(!selectedDate) return;
+
+        fetch(`/api/records/${selectedDate}`)
+        .then(res => res.json())
+        .then(data => {
+            globalProduction = data.production;
+            globalPackaging = data.packaging;
+            renderProduction(data.production);
+            renderPackaging(data.packaging);
+            populateRenameDropdown();
+        });
+    }
+
+    function renderProduction(items) {
+        const tbody = document.querySelector('#production-table tbody');
+        tbody.innerHTML = '';
+        const isDisabled = userRole === 'viewer' ? 'disabled' : '';
+        
+        items.forEach((item, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><b id="p-name-${index}">${item.name}</b></td>
+                    <td><input type="number" value="${item.prevStock || 0}" id="p-prev-${index}" oninput="autoCalcProduction(${index})" ${isDisabled}></td>
+                    <td><input type="number" value="${item.added || 0}" id="p-added-${index}" oninput="autoCalcProduction(${index})" ${isDisabled}></td>
+                    <td><input type="number" value="${item.issued || 0}" id="p-issued-${index}" oninput="autoCalcProduction(${index})" ${isDisabled}></td>
+                    <td><input type="number" value="${item.returned || 0}" id="p-returned-${index}" oninput="autoCalcProduction(${index})" ${isDisabled}></td>
+                    <td><span id="p-used-text-${index}" class="calc-text">${item.used || 0}</span></td>
+                    <td><input type="number" value="${item.wasted || 0}" id="p-wasted-${index}" oninput="autoCalcProduction(${index})" ${isDisabled}></td>
+                    <td><span id="p-current-text-${index}" class="calc-text" style="color: green;">${item.currentStock || 0}</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderPackaging(items) {
+        const tbody = document.querySelector('#packaging-table tbody');
+        tbody.innerHTML = '';
+        const isDisabled = userRole === 'viewer' ? 'disabled' : '';
+        
+        items.forEach((item, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td><b id="pkg-name-${index}">${item.name}</b></td>
+                    <td><input type="number" value="${item.prevStock || 0}" id="pkg-prev-${index}" oninput="autoCalcPackaging(${index})" ${isDisabled}></td>
+                    <td><input type="number" value="${item.added || 0}" id="pkg-added-${index}" oninput="autoCalcPackaging(${index})" ${isDisabled}></td>
+                    <td><input type="number" value="${item.morningIssue || 0}" id="pkg-morning-${index}" oninput="autoCalcPackaging(${index})" ${isDisabled}></td>
+                    <td><input type="number" value="${item.eveningReturn || 0}" id="pkg-evening-${index}" oninput="autoCalcPackaging(${index})" ${isDisabled}></td>
+                    <td><span id="pkg-used-text-${index}" class="calc-text">${item.used || 0}</span></td>
+                    <td><input type="number" value="${item.damaged || 0}" id="pkg-damaged-${index}" oninput="autoCalcPackaging(${index})" ${isDisabled}></td>
+                    <td><span id="pkg-current-text-${index}" class="calc-text" style="color: green;">${item.currentStock || 0}</span></td>
+                </tr>
+            `;
+        });
+    }
+
+    function autoCalcProduction(index) {
+        const prev = Number(document.getElementById(`p-prev-${index}`).value) || 0;
+        const added = Number(document.getElementById(`p-added-${index}`).value) || 0;
+        const issued = Number(document.getElementById(`p-issued-${index}`).value) || 0;
+        const returned = Number(document.getElementById(`p-returned-${index}`).value) || 0;
+        const wasted = Number(document.getElementById(`p-wasted-${index}`).value) || 0;
+
+        const used = issued - returned;
+        const current = (prev + added) - used - wasted;
+
+        document.getElementById(`p-used-text-${index}`).innerText = used;
+        document.getElementById(`p-current-text-${index}`).innerText = current;
+    }
+
+    function autoCalcPackaging(index) {
+        const prev = Number(document.getElementById(`pkg-prev-${index}`).value) || 0;
+        const added = Number(document.getElementById(`pkg-added-${index}`).value) || 0;
+        const morning = Number(document.getElementById(`pkg-morning-${index}`).value) || 0;
+        const evening = Number(document.getElementById(`pkg-evening-${index}`).value) || 0;
+        const damaged = Number(document.getElementById(`pkg-damaged-${index}`).value) || 0;
+
+        const used = morning - evening;
+        const current = (prev + added) - used - damaged;
+
+        document.getElementById(`pkg-used-text-${index}`).innerText = used;
+        document.getElementById(`pkg-current-text-${index}`).innerText = current;
+    }
+
+    // နာမည်ပြင်မည့် Dropdown ထဲသို့ ပစ္စည်းများ ဖြည့်ပေးသည့် Function
+    function populateRenameDropdown() {
+        const group = document.getElementById('rename-group').value;
+        const select = document.getElementById('rename-old-name');
+        select.innerHTML = '';
+        
+        const items = group === 'production' ? globalProduction : globalPackaging;
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.name;
+            opt.innerText = item.name;
+            select.appendChild(opt);
+        });
+    }
+
+    function renameItem() {
+        if(userRole === 'viewer') return;
+        const type = document.getElementById('rename-group').value;
+        const oldName = document.getElementById('rename-old-name').value;
+        const newName = document.getElementById('rename-new-name').value.trim();
+
+        if(!oldName) return alert('ပြင်ဆင်မည့် ပစ္စည်းကို ရွေးချယ်ပါ');
+        if(!newName) return alert('နာမည်အသစ် ရိုက်ထည့်ပါ');
+
+        fetch('/api/items/rename', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ type, oldName, newName })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert(`"${oldName}" ကို "${newName}" အဖြစ် ပြောင်းလဲပြီးပါပြီ။`);
+                document.getElementById('rename-new-name').value = '';
+                loadRecords();
+            }
+        });
+    }
+
+    function addItem(type) {
+        if(userRole === 'viewer') return;
+        const name = document.getElementById('new-item-name').value.trim();
+        if(!name) return alert('ပစ္စည်းအမည် ရိုက်ထည့်ပါဦး');
+
+        fetch(`/api/items/${type}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert('ပစ္စည်းအသစ် ထည့်သွင်းပြီးပါပြီ။');
+                document.getElementById('new-item-name').value = '';
+                loadRecords();
+            }
+        });
+    }
+
+    function saveRecords() {
+        if(userRole === 'viewer') return;
+        
+        const productionRows = document.querySelectorAll('#production-table tbody tr');
+        const updatedProduction = [];
+        productionRows.forEach((row, index) => {
+            updatedProduction.push({
+                name: document.getElementById(`p-name-${index}`).innerText,
+                prevStock: document.getElementById(`p-prev-${index}`).value || 0,
+                added: document.getElementById(`p-added-${index}`).value || 0,
+                issued: document.getElementById(`p-issued-${index}`).value || 0,
+                returned: document.getElementById(`p-returned-${index}`).value || 0,
+                wasted: document.getElementById(`p-wasted-${index}`).value || 0,
+            });
+        });
+
+        const packagingRows = document.querySelectorAll('#packaging-table tbody tr');
+        const updatedPackaging = [];
+        packagingRows.forEach((row, index) => {
+            updatedPackaging.push({
+                name: document.getElementById(`pkg-name-${index}`).innerText,
+                prevStock: document.getElementById(`pkg-prev-${index}`).value || 0,
+                added: document.getElementById(`pkg-added-${index}`).value || 0,
+                morningIssue: document.getElementById(`pkg-morning-${index}`).value || 0,
+                eveningReturn: document.getElementById(`pkg-evening-${index}`).value || 0,
+                damaged: document.getElementById(`pkg-damaged-${index}`).value || 0,
+            });
+        });
+
+        fetch(`/api/records/${selectedDate}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ production: updatedProduction, packaging: updatedPackaging })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                alert('စာရင်းဇယားများအားလုံးကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။');
+                loadRecords();
+            }
+        });
+    }
+</script>
+</body>
+</html>
